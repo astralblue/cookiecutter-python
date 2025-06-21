@@ -166,7 +166,7 @@ cython_debug/
 #  https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore and
 #  https://github.com/github/gitignore/blob/main/Python.gitignore
 #  templates and files created by PyCharm.
-.idea/
+#.idea/
 
 # Pixi
 .pixi/
