@@ -1,3 +1,6 @@
+# Project-specific venv directories
+/.venvs/
+
 # --- BEGIN https://raw.githubusercontent.com/github/gitignore/975d0c3945bbc35e24e7ecc1180ae6288e3b6aeb/Python.gitignore ---
 # Byte-compiled / optimized / DLL files
 __pycache__/
