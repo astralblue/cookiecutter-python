@@ -6,6 +6,7 @@ import re
 import subprocess
 import sys
 import urllib.request
+from datetime import datetime, timedelta
 from pathlib import Path
 
 
@@ -28,22 +29,67 @@ def fetch_supported_python_versions():
         with urllib.request.urlopen("https://endoflife.date/api/python.json") as response:
             data = json.loads(response.read().decode())
         
+        # Get current date for EOL comparison
+        today = datetime.now().date()
+        warning_threshold = today + timedelta(days=30)
+        
         # Filter for Python 3.x versions that are still supported (not EOL)
         supported_versions = []
+        warning_versions = []
+        
         for version_info in data:
             cycle = version_info.get("cycle", "")
-            eol = version_info.get("eol", False)
+            eol = version_info.get("eol")
             
-            # Check if it's Python 3.x and not end-of-life
-            if cycle.startswith("3.") and not eol:
-                # Extract major.minor version
-                match = re.match(r"3\.(\d+)", cycle)
-                if match:
-                    minor = int(match.group(1))
-                    supported_versions.append(minor)
+            # Skip if not Python 3.x
+            if not cycle.startswith("3."):
+                continue
+                
+            # Extract major.minor version
+            match = re.match(r"3\.(\d+)", cycle)
+            if not match:
+                continue
+                
+            minor = int(match.group(1))
+            
+            # Handle different EOL field types
+            is_supported = False
+            eol_date = None
+            
+            if eol is False or eol is None:
+                # Not EOL yet
+                is_supported = True
+            elif isinstance(eol, bool) and eol:
+                # Boolean True means already EOL
+                is_supported = False
+            elif isinstance(eol, str):
+                # Date string - parse and check
+                try:
+                    eol_date = datetime.strptime(eol, "%Y-%m-%d").date()
+                    is_supported = today < eol_date
+                except ValueError:
+                    # If we can't parse the date, treat as potentially supported
+                    print(f"Warning: Could not parse EOL date '{eol}' for Python {cycle}")
+                    is_supported = True
+            
+            if is_supported:
+                supported_versions.append(minor)
+                
+                # Check if version expires within a month and warn
+                if eol_date and eol_date <= warning_threshold:
+                    warning_versions.append((cycle, eol_date))
         
         # Sort versions and return unique values
         supported_versions = sorted(set(supported_versions))
+        
+        # Print warnings for versions expiring soon
+        if warning_versions:
+            print("WARNING: The following Python versions will reach EOL within 30 days:")
+            for version, eol_date in warning_versions:
+                days_left = (eol_date - today).days
+                print(f"  - Python {version} expires on {eol_date} ({days_left} days)")
+            print()
+        
         print(f"Fetched supported Python 3.x versions: {[f'3.{v}' for v in supported_versions]}")
         return supported_versions
         
