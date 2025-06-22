@@ -86,6 +86,41 @@ def parse_version_range(version_range):
     return min_version, max_version
 
 
+def update_flit_module_config():
+    """Add [tool.flit.module] section if package name differs from distribution name."""
+    package_name = "{{ cookiecutter.package_name }}"
+    distribution_name = "{{ cookiecutter.distribution_name }}"
+    
+    # Calculate what Flit would expect as the default module name
+    expected_module_name = distribution_name.replace("-", "_")
+    
+    # If package name differs from expected, we need to specify it
+    if package_name != expected_module_name:
+        print(f"Adding [tool.flit.module] section: {package_name} != {expected_module_name}")
+        
+        pyproject_path = Path("pyproject.toml")
+        if not pyproject_path.exists():
+            print("pyproject.toml not found, skipping flit module config")
+            return
+        
+        content = pyproject_path.read_text()
+        
+        # Add the [tool.flit.module] section before [tool.isort]
+        flit_module_section = f'[tool.flit.module]\nname = "{package_name}"\n\n'
+        
+        # Insert before [tool.isort] section
+        if "[tool.isort]" in content:
+            content = content.replace("[tool.isort]", flit_module_section + "[tool.isort]")
+        else:
+            # If no [tool.isort], append at the end
+            content += flit_module_section
+        
+        pyproject_path.write_text(content)
+        print(f"Added [tool.flit.module] with name = \"{package_name}\"")
+    else:
+        print(f"Package name matches expected module name, no [tool.flit.module] needed")
+
+
 def generate_python_metadata():
     """Generate Python version metadata based on version range."""
     pyproject_path = Path("pyproject.toml")
@@ -178,8 +213,69 @@ def generate_python_metadata():
     print(f"Updated Python version classifiers: {[f'3.{v}' for v in target_versions]}")
 
 
+def setup_namespace_packages():
+    """Set up PEP 420 namespace packages by restructuring the package directory."""
+    package_name = "{{ cookiecutter.package_name }}"
+    
+    # Split package name into parts (e.g., "k3l.fcgraph.tools" -> ["k3l", "fcgraph", "tools"])
+    parts = package_name.split(".")
+    
+    # If there's only one part, no namespace packages needed
+    if len(parts) <= 1:
+        print("Single-level package, no namespace packages needed")
+        return
+    
+    print(f"Setting up PEP 420 namespace packages for: {package_name}")
+    
+    # Find the generated package directory (cookiecutter creates it with dots as literal directory name)
+    old_package_dir = Path(package_name)  # e.g., "k3l.fcgraph.tools"
+    
+    if not old_package_dir.exists():
+        print(f"Warning: Expected package directory {old_package_dir} not found")
+        return
+    
+    # Create the proper nested directory structure
+    target_path = Path(".")
+    for part in parts:
+        target_path = target_path / part
+        target_path.mkdir(parents=True, exist_ok=True)
+    
+    # Move the __init__.py file to the final package directory
+    old_init = old_package_dir / "__init__.py"
+    new_init = target_path / "__init__.py"
+    
+    if old_init.exists():
+        print(f"Moving {old_init} to {new_init}")
+        # Copy content and remove old file
+        new_init.write_text(old_init.read_text())
+        old_init.unlink()
+    
+    # Remove the old directory structure
+    if old_package_dir.exists() and not any(old_package_dir.iterdir()):  # Only if empty
+        print(f"Removing empty directory: {old_package_dir}")
+        old_package_dir.rmdir()
+    
+    # Ensure namespace packages don't have __init__.py (they shouldn't, but just in case)
+    current_path = Path(".")
+    for i, part in enumerate(parts[:-1]):  # All parts except the last one
+        current_path = current_path / part
+        init_file = current_path / "__init__.py"
+        
+        if init_file.exists():
+            print(f"Removing {init_file} (PEP 420 namespace package)")
+            init_file.unlink()
+    
+    print(f"Namespace package structure created: {'/'.join(parts)}")
+
+
 def main():
     """Initialize git repository with empty root commit and update metadata."""
+    print("Setting up namespace packages...")
+    setup_namespace_packages()
+    
+    print("Updating Flit module configuration...")
+    update_flit_module_config()
+    
     print("Generating dynamic Python version metadata...")
     generate_python_metadata()
     
