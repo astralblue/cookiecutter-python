@@ -114,9 +114,10 @@ cookiecutter-python/
 6. Claude syncs with main branch
 
 **Recent Commits**:
+- `3e0d846` - feat: separate author name from GitHub usernames
+- `9b37fbb` - docs: add Claude session memory file
 - `855f46b` - fix: handle date-based EOL fields in Python version API
 - `152824e` - feat: add PEP 420 namespace package support
-- `098d0d5` - feat: add comprehensive project README
 
 ## Development Notes
 
@@ -181,5 +182,29 @@ cookiecutter . --no-input \
 
 Both generate working, buildable, installable Python packages.
 
+## Session 2025-07-04: GitHub Username Separation
+
+### 🎯 **Enhancement: Separate Author Name from GitHub Usernames**
+
+**Problem**: User wanted to use real name ("Eugene Kim") as `author_name` but this was being used in GitHub URLs, creating invalid links.
+
+**Solution Implemented**:
+1. **Added two new variables to `cookiecutter.json`:**
+   - `github_user`: GitHub username (asked first)
+   - `github_owner`: Repository owner (defaults to `github_user`)
+
+2. **Updated `pyproject.toml`** to use `github_owner` instead of `author_name` in GitHub URLs:
+   - Homepage, Repository, and Issues URLs now use `{{cookiecutter.github_owner}}`
+
+**Key Benefits**:
+- `author_name`: "Eugene Kim" (display name in package metadata)
+- `github_owner`: "astralblue" (used in GitHub URLs)
+- Proper separation of concerns between display names and usernames
+
+**Testing Confirmed**:
+- Template generates correct GitHub URLs using `github_owner`
+- Author metadata uses proper display name
+- Both namespace and simple packages work correctly
+
 ---
-*Last updated: 2025-06-21 by Claude Code*
+*Last updated: 2025-07-04 by Claude Code*
