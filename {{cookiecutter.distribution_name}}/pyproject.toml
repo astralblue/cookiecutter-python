@@ -32,9 +32,9 @@ docs = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/{{cookiecutter.author_name}}/{{cookiecutter.distribution_name}}"
-Repository = "https://github.com/{{cookiecutter.author_name}}/{{cookiecutter.distribution_name}}"
-Issues = "https://github.com/{{cookiecutter.author_name}}/{{cookiecutter.distribution_name}}/issues"
+Homepage = "https://github.com/{{cookiecutter.github_owner}}/{{cookiecutter.distribution_name}}"
+Repository = "https://github.com/{{cookiecutter.github_owner}}/{{cookiecutter.distribution_name}}"
+Issues = "https://github.com/{{cookiecutter.github_owner}}/{{cookiecutter.distribution_name}}/issues"
 
 [tool.isort]
 profile = "black"
